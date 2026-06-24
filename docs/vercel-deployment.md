@@ -1,6 +1,6 @@
 # Vercel Deployment
 
-**Date:** June 2026
+**Date:** June 2026 (updated — Supabase API)
 
 ## What changed
 
@@ -8,33 +8,24 @@ Configured the project for production hosting on Vercel.
 
 ### Files
 
-- `vercel.json` — build command, Next.js framework preset
+- `vercel.json` — `next build` only (no Prisma migrations)
 - `.nvmrc` — Node 20
-- `package.json` — `engines.node >= 20`, `postinstall: prisma generate`, build runs `prisma migrate deploy`
-
-### Build command
-
-```bash
-prisma generate && prisma migrate deploy && next build
-```
 
 ### Environment variables (Vercel)
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | Supabase Transaction pooler (app runtime) |
-| `DIRECT_URL` | Supabase direct connection (migrations at build) |
-| `AUTH_SECRET` | NextAuth session signing (`openssl rand -base64 32`) |
-
-`trustHost: true` is set in auth config — no `AUTH_URL` required on Vercel.
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
+| `AUTH_SECRET` | NextAuth session signing |
 
 ## Why
 
-SQLite does not work on Vercel serverless. Production requires a hosted Postgres database and automated schema migrations at deploy time.
+App uses Supabase REST API — no direct Postgres connection or build-time migrations.
 
 ## How
 
-1. Import `bharathbhsp/ekasar-realty` at [vercel.com/new](https://vercel.com/new)
-2. Set env vars (see [supabase-database.md](./supabase-database.md))
-3. Deploy
-4. Seed production once: `npm run db:seed` with production env pulled locally
+1. Import repo at [vercel.com/new](https://vercel.com/new)
+2. Set env vars above
+3. Run `supabase/schema.sql` in Supabase SQL Editor (once)
+4. Deploy, then `npm run db:seed` with production env

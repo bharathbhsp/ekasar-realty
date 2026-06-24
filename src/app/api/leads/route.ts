@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
 import { leadSchema } from "@/lib/validators";
+import { randomUUID } from "crypto";
 
 export async function POST(request: Request) {
   try {
@@ -14,14 +15,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        ...parsed.data,
+    const supabase = createServiceClient();
+    const { data: lead, error } = await supabase
+      .from("Lead")
+      .insert({
+        id: randomUUID(),
+        name: parsed.data.name,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        projectInterest: parsed.data.projectInterest ?? null,
+        message: parsed.data.message ?? null,
         source: parsed.data.source || "website",
-      },
-    });
+        createdAt: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
-    return NextResponse.json({ id: lead.id, message: "Thank you! We'll be in touch soon." });
+    if (error) {
+      return NextResponse.json({ error: "Failed to submit enquiry" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      id: lead.id,
+      message: "Thank you! We'll be in touch soon.",
+    });
   } catch {
     return NextResponse.json({ error: "Failed to submit enquiry" }, { status: 500 });
   }

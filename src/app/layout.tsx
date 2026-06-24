@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout/Providers";
-import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -30,7 +29,6 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
         <Providers>
-          <AnnouncementBar />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

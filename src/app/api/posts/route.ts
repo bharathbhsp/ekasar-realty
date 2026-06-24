@@ -1,36 +1,39 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
 import { postSchema } from "@/lib/validators";
 import { slugify } from "@/lib/utils";
 import { canPublish } from "@/lib/rbac";
+import type { Post } from "@/types/database";
+
 export async function GET(request: Request) {
   const session = await auth();
   const { searchParams } = new URL(request.url);
   const includeDrafts = searchParams.get("drafts") === "true";
+  const supabase = createServiceClient();
 
   const isEditor =
     session?.user?.role === "EDITOR" || session?.user?.role === "ADMIN";
 
   if (includeDrafts && isEditor) {
-    const posts = await prisma.post.findMany({
-      where:
-        session?.user?.role === "ADMIN"
-          ? undefined
-          : { authorId: session!.user!.id },
-      include: { author: { select: { name: true } } },
-      orderBy: { updatedAt: "desc" },
-    });
-    return NextResponse.json(posts);
+    let query = supabase.from("Post").select("*").order("updatedAt", { ascending: false });
+    if (session?.user?.role !== "ADMIN") {
+      query = query.eq("authorId", session!.user!.id);
+    }
+    const { data, error } = await query;
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
   }
 
-  const posts = await prisma.post.findMany({
-    where: { visibility: { in: ["PUBLIC", "MEMBER"] } },
-    include: { author: { select: { name: true } } },
-    orderBy: { publishedAt: "desc" },
-  });
+  const { data, error } = await supabase
+    .from("Post")
+    .select("*")
+    .in("visibility", ["PUBLIC", "MEMBER"])
+    .order("publishedAt", { ascending: false });
 
-  return NextResponse.json(posts);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function POST(request: Request) {
@@ -51,20 +54,28 @@ export async function POST(request: Request) {
     }
 
     const slug = parsed.data.slug || slugify(parsed.data.title);
-    const existing = await prisma.post.findUnique({ where: { slug } });
+    const supabase = createServiceClient();
+
+    const { data: existing } = await supabase
+      .from("Post")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
     if (existing) {
       return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
     }
 
+    const now = new Date().toISOString();
     const publishedAt =
       parsed.data.visibility !== "DRAFT"
-        ? parsed.data.publishedAt
-          ? new Date(parsed.data.publishedAt)
-          : new Date()
+        ? parsed.data.publishedAt ?? now
         : null;
 
-    const post = await prisma.post.create({
-      data: {
+    const { data: post, error } = await supabase
+      .from("Post")
+      .insert({
+        id: randomUUID(),
         title: parsed.data.title,
         slug,
         excerpt: parsed.data.excerpt,
@@ -74,10 +85,17 @@ export async function POST(request: Request) {
         tags: parsed.data.tags || "",
         authorId: session.user.id,
         publishedAt,
-      },
-    });
+        createdAt: now,
+        updatedAt: now,
+      })
+      .select("*")
+      .single();
 
-    return NextResponse.json(post, { status: 201 });
+    if (error) {
+      return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+    }
+
+    return NextResponse.json(post as Post, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
   }

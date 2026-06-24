@@ -6,8 +6,8 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { parseJsonArray } from "@/lib/utils";
+import type { Project } from "@/types/database";
 import type { ProjectStatus } from "@/types";
-import type { Project } from "@prisma/client";
 
 const statusLabels: Record<ProjectStatus, string> = {
   READY: "Ready to Move",

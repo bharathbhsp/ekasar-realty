@@ -2,9 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Lock } from "lucide-react";
 import type { PostVisibility } from "@/types";
-import type { Post } from "@prisma/client";
-
-type PostWithAuthor = Post & { author: { name: string } };
+import type { PostWithAuthor } from "@/types/database";
 
 export function PostCard({
   post,

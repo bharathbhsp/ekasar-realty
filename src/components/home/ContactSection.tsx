@@ -4,9 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { PostCard } from "@/components/blog/PostCard";
-import type { Post } from "@prisma/client";
-
-type PostWithAuthor = Post & { author: { name: string } };
+import type { PostWithAuthor } from "@/types/database";
 
 export function BlogPreview({
   posts,

@@ -1,10 +1,11 @@
-import { prisma } from "@/lib/prisma";
+import { getProjects } from "@/lib/data";
 import { LeadForm } from "@/components/home/ContactSection";
 
 export const metadata = { title: "Contact Us" };
 
 export default async function ContactPage() {
-  const projects = await prisma.project.findMany({ select: { name: true } });
+  const projects = await getProjects();
+  const projectNames = projects.map((p) => ({ name: p.name as string }));
 
   return (
     <div className="pt-16">
@@ -14,7 +15,7 @@ export default async function ContactPage() {
         </p>
         <h1 className="text-4xl font-bold text-navy">We&apos;d love to hear from you</h1>
       </div>
-      <LeadForm projects={projects} />
+      <LeadForm projects={projectNames} />
     </div>
   );
 }

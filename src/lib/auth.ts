@@ -2,7 +2,8 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { authConfig } from "@/lib/auth.config";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
+import type { User } from "@/types/database";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -19,18 +20,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        const supabase = createServiceClient();
+        const { data: user, error } = await supabase
+          .from("User")
+          .select("*")
+          .eq("email", email)
+          .maybeSingle();
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (error || !user) return null;
+
+        const record = user as User;
+        const valid = await bcrypt.compare(password, record.passwordHash);
         if (!valid) return null;
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role as import("@/types").Role,
-          emailVerified: user.emailVerified,
+          id: record.id,
+          email: record.email,
+          name: record.name,
+          role: record.role,
+          emailVerified: record.emailVerified
+            ? new Date(record.emailVerified)
+            : null,
         };
       },
     }),

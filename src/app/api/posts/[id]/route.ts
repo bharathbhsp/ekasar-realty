@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
 import { postSchema } from "@/lib/validators";
 import { canEditPost } from "@/lib/rbac";
+import type { Post } from "@/types/database";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -13,12 +14,21 @@ export async function PUT(request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const existing = await prisma.post.findUnique({ where: { id } });
-  if (!existing) {
+  const supabase = createServiceClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("Post")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError || !existing) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
-  if (!canEditPost(session.user.role, session.user.id, existing.authorId)) {
+  const post = existing as Post;
+
+  if (!canEditPost(session.user.role, session.user.id, post.authorId)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -34,26 +44,31 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const publishedAt =
       parsed.data.visibility !== "DRAFT"
-        ? parsed.data.publishedAt
-          ? new Date(parsed.data.publishedAt)
-          : existing.publishedAt || new Date()
+        ? parsed.data.publishedAt ?? post.publishedAt ?? new Date().toISOString()
         : null;
 
-    const post = await prisma.post.update({
-      where: { id },
-      data: {
+    const { data: updated, error } = await supabase
+      .from("Post")
+      .update({
         title: parsed.data.title,
-        slug: parsed.data.slug || existing.slug,
+        slug: parsed.data.slug || post.slug,
         excerpt: parsed.data.excerpt,
         body: parsed.data.body,
         coverImageUrl: parsed.data.coverImageUrl || null,
         visibility: parsed.data.visibility,
         tags: parsed.data.tags || "",
         publishedAt,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("*")
+      .single();
 
-    return NextResponse.json(post);
+    if (error) {
+      return NextResponse.json({ error: "Failed to update post" }, { status: 500 });
+    }
+
+    return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: "Failed to update post" }, { status: 500 });
   }
@@ -66,6 +81,12 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  await prisma.post.delete({ where: { id } });
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("Post").delete().eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -1,11 +1,11 @@
 # Ekasar Realty
 
-Premium real estate marketing site built with Next.js 15, Prisma, and NextAuth.
+Premium real estate marketing site built with Next.js 15 and NextAuth.
 
 ## Stack
 
 - **Frontend:** Next.js App Router, Tailwind CSS, Framer Motion
-- **Database:** [Supabase](https://supabase.com) Postgres + Prisma
+- **Database:** [Supabase](https://supabase.com) via JavaScript API (no direct Postgres connection)
 - **Auth:** NextAuth (credentials, JWT)
 - **Hosting:** Vercel
 
@@ -19,29 +19,25 @@ npm install
 
 ### 2. Configure Supabase
 
-Create a project at [supabase.com](https://supabase.com), then copy connection strings from **Project Settings → Database**:
+Create a project at [supabase.com](https://supabase.com).
 
-| Variable | Supabase connection |
-|----------|---------------------|
-| `DATABASE_URL` | **Transaction** pooler (port 6543) + `?pgbouncer=true&connection_limit=1` |
-| `DIRECT_URL` | **Session** pooler or **Direct** (port 5432) |
+1. Run `supabase/schema.sql` in **SQL Editor**
+2. Copy API keys from **Project Settings → API**
 
-Copy `.env.example` to `.env` and fill in the values:
+| Variable | Where |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
+# Fill in values + AUTH_SECRET (openssl rand -base64 32)
 ```
 
-Generate an auth secret:
+### 3. Seed database
 
 ```bash
-openssl rand -base64 32
-```
-
-### 3. Initialize database
-
-```bash
-npm run db:setup
+npm run db:seed
 ```
 
 ### 4. Start dev server
@@ -50,31 +46,22 @@ npm run db:setup
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
 **Seed accounts:** `admin@ekasar.com` / `password123`
 
 ## Deploy on Vercel
 
-1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new)
-2. Add environment variables in Vercel (**Settings → Environment Variables**):
-   - `DATABASE_URL` — Supabase Transaction pooler URL
-   - `DIRECT_URL` — Supabase direct URL (for Prisma migrations at build time)
-   - `AUTH_SECRET` — `openssl rand -base64 32`
-3. Deploy — build runs `prisma migrate deploy` automatically
-4. Seed production data once:
+Set these environment variables:
 
-```bash
-npx vercel env pull .env.production.local
-export $(grep -v '^#' .env.production.local | xargs)
-npm run db:seed
-```
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `AUTH_SECRET`
+
+Then deploy and run `npm run db:seed` once against production.
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Start development server |
-| `npm run build` | Production build (migrate + Next.js) |
-| `npm run db:setup` | Run migrations and seed |
-| `npm run db:seed` | Seed demo data |
+| `npm run build` | Production build |
+| `npm run db:seed` | Seed demo data via Supabase API |

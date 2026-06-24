@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const projects = await prisma.project.findMany({
-    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-  });
-  return NextResponse.json(projects);
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("Project")
+    .select("*")
+    .order("featured", { ascending: false })
+    .order("createdAt", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
 }

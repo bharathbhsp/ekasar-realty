@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 import { slugify } from "@/lib/utils";
-import type { Post } from "@prisma/client";
+import type { Post } from "@/types/database";
 import type { PostVisibility } from "@/types";
 
 interface BlogEditorProps {

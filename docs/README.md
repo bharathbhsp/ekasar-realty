@@ -6,4 +6,5 @@ Index of major project changes and setup guides.
 |----------|---------|
 | [phase-1-mvp.md](./phase-1-mvp.md) | Phase 1 MVP — site, auth, blog, admin |
 | [vercel-deployment.md](./vercel-deployment.md) | Vercel hosting and build configuration |
-| [supabase-database.md](./supabase-database.md) | Supabase Postgres + Prisma setup |
+| [supabase-api.md](./supabase-api.md) | Supabase JS API migration (replaces Prisma) |
+| [supabase-database.md](./supabase-database.md) | Schema and env setup |

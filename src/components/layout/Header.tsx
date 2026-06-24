@@ -19,9 +19,15 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [announcementVisible, setAnnouncementVisible] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const isHome = pathname === "/";
+
+  useEffect(() => {
+    const dismissed = sessionStorage.getItem("announcement-dismissed");
+    setAnnouncementVisible(!dismissed);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -35,118 +41,147 @@ export function Header() {
 
   const textColor = scrolled || !isHome ? "text-navy" : "text-white";
 
-  return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        headerBg
-      )}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          <Link href="/" className="flex items-center gap-2">
-            <span
-              className={cn(
-                "text-xl lg:text-2xl font-bold tracking-tight transition-colors",
-                textColor
-              )}
-            >
-              Ekasar<span className="text-gold">.</span>
-            </span>
-          </Link>
+  const dismissAnnouncement = () => {
+    sessionStorage.setItem("announcement-dismissed", "1");
+    setAnnouncementVisible(false);
+  };
 
-          <nav className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50">
+      {announcementVisible && (
+        <div className="bg-navy text-white text-sm py-3 px-4 sm:px-6 text-center relative">
+          <p className="leading-snug pr-10 sm:pr-0">
+            <span className="font-medium">Coming Soon:</span> New launch at Hebbal —
+            <Link
+              href="/projects/ekasar-horizon"
+              className="underline ml-1 hover:text-gold transition-colors"
+            >
+              Register your interest
+            </Link>
+          </p>
+          <button
+            onClick={dismissAnnouncement}
+            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-1.5 hover:text-gold transition-colors"
+            aria-label="Dismiss announcement"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div
+        className={cn(
+          "transition-all duration-300 border-b border-transparent",
+          headerBg,
+          (scrolled || !isHome) && "border-gray-100/80"
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16 lg:h-20 gap-4">
+            <Link href="/" className="flex items-center self-center">
+              <span
                 className={cn(
-                  "text-sm font-medium hover:text-gold transition-colors",
+                  "text-xl lg:text-2xl font-bold tracking-tight transition-colors leading-none",
                   textColor
                 )}
               >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+                Ekasar<span className="text-gold">.</span>
+              </span>
+            </Link>
 
-          <div className="hidden lg:flex items-center gap-4">
-            {session ? (
-              <div className="relative">
-                <button
-                  onClick={() => setAccountOpen(!accountOpen)}
-                  className={cn(
-                    "flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-colors",
-                    scrolled || !isHome
-                      ? "border-navy/20 text-navy hover:border-gold"
-                      : "border-white/30 text-white hover:border-gold hover:text-gold"
-                  )}
-                >
-                  <User className="w-4 h-4" />
-                  {session.user?.name?.split(" ")[0]}
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                {accountOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-navy hover:bg-gray-50"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      <User className="w-4 h-4" /> Account
-                    </Link>
-                    {(session.user?.role === "EDITOR" ||
-                      session.user?.role === "ADMIN") && (
-                      <Link
-                        href="/admin"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-navy hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        <LayoutDashboard className="w-4 h-4" /> Admin
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
-                    >
-                      <LogOut className="w-4 h-4" /> Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
+            <nav className="hidden lg:flex items-center justify-center gap-8">
+              {navLinks.map((link) => (
                 <Link
-                  href="/auth/sign-in"
+                  key={link.href}
+                  href={link.href}
                   className={cn(
-                    "text-sm font-medium hover:text-gold transition-colors",
+                    "text-sm font-medium leading-none hover:text-gold transition-colors",
                     textColor
                   )}
                 >
-                  Sign In
+                  {link.label}
                 </Link>
-                <Link
-                  href="/auth/register"
-                  className="text-sm font-semibold bg-gold text-navy px-5 py-2.5 rounded-full hover:bg-gold-light transition-colors"
-                >
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
+              ))}
+            </nav>
 
-          <button
-            className={cn("lg:hidden p-2", textColor)}
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+            <div className="hidden lg:flex items-center justify-end gap-4 self-center">
+              {session ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setAccountOpen(!accountOpen)}
+                    className={cn(
+                      "flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-colors",
+                      scrolled || !isHome
+                        ? "border-navy/20 text-navy hover:border-gold"
+                        : "border-white/30 text-white hover:border-gold hover:text-gold"
+                    )}
+                  >
+                    <User className="w-4 h-4" />
+                    {session.user?.name?.split(" ")[0]}
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  {accountOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                      <Link
+                        href="/account"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-navy hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        <User className="w-4 h-4" /> Account
+                      </Link>
+                      {(session.user?.role === "EDITOR" ||
+                        session.user?.role === "ADMIN") && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-navy hover:bg-gray-50"
+                          onClick={() => setAccountOpen(false)}
+                        >
+                          <LayoutDashboard className="w-4 h-4" /> Admin
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                      >
+                        <LogOut className="w-4 h-4" /> Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/sign-in"
+                    className={cn(
+                      "inline-flex items-center h-10 text-sm font-medium leading-none hover:text-gold transition-colors",
+                      textColor
+                    )}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    className="inline-flex items-center h-10 text-sm font-semibold leading-none bg-gold text-navy px-5 rounded-full hover:bg-gold-light transition-colors"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <button
+              className={cn("lg:hidden justify-self-end p-2 -mr-2", textColor)}
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
 
       {mobileOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3">
+        <div className="lg:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3 shadow-lg">
           {navLinks.map((link) => (
             <Link
               key={link.href}

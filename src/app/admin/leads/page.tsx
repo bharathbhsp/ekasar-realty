@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
+import type { Lead } from "@/types/database";
 
 export const metadata = { title: "Leads" };
 
@@ -8,10 +9,18 @@ export default async function AdminLeadsPage() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") redirect("/admin");
 
-  const leads = await prisma.lead.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  });
+  const supabase = createServiceClient();
+  const { data: leads, error } = await supabase
+    .from("Lead")
+    .select("*")
+    .order("createdAt", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    return <p className="text-red-500">Failed to load leads.</p>;
+  }
+
+  const rows = (leads ?? []) as Lead[];
 
   return (
     <div>
@@ -28,7 +37,7 @@ export default async function AdminLeadsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {leads.map((lead) => (
+            {rows.map((lead) => (
               <tr key={lead.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                   {new Date(lead.createdAt).toLocaleDateString("en-IN")}
@@ -44,7 +53,7 @@ export default async function AdminLeadsPage() {
             ))}
           </tbody>
         </table>
-        {leads.length === 0 && (
+        {rows.length === 0 && (
           <p className="text-center text-gray-500 py-12">No leads yet.</p>
         )}
       </div>

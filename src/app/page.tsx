@@ -4,17 +4,16 @@ import { Hero } from "@/components/home/Hero";
 import { Pillars } from "@/components/home/Pillars";
 import { Stats } from "@/components/home/Stats";
 import { ProjectsCarousel } from "@/components/home/ProjectsCarousel";
-import { BlogPreview } from "@/components/home/ContactSection";
-import { LeadForm } from "@/components/home/ContactSection";
-import { prisma } from "@/lib/prisma";
+import { BlogPreview, LeadForm } from "@/components/home/ContactSection";
 
 export default async function HomePage() {
   const session = await auth();
-  const [projects, posts, allProjects] = await Promise.all([
+  const [projects, posts] = await Promise.all([
     getFeaturedProjects(),
     getPublishedPosts(4),
-    prisma.project.findMany({ select: { name: true } }),
   ]);
+
+  const projectNames = projects.map((p) => ({ name: p.name as string }));
 
   return (
     <>
@@ -23,7 +22,7 @@ export default async function HomePage() {
       <Stats />
       <ProjectsCarousel projects={projects} />
       <BlogPreview posts={posts} isAuthenticated={!!session?.user} />
-      <LeadForm projects={allProjects} />
+      <LeadForm projects={projectNames} />
     </>
   );
 }

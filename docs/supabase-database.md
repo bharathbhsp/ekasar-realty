@@ -1,50 +1,40 @@
 # Supabase Database
 
-**Date:** June 2026
+**Date:** June 2026 (updated — API-only, no Prisma)
 
 ## What changed
 
-Database provider set to **Supabase Postgres** for local development and Vercel production.
+Database access uses the **Supabase JavaScript API** — not direct Postgres connection strings.
+
+See [supabase-api.md](./supabase-api.md) for the full migration details.
 
 ### Schema
 
-- `prisma/schema.prisma` uses `postgresql` with:
-  - `DATABASE_URL` — Transaction pooler (port 6543, `pgbouncer=true`)
-  - `DIRECT_URL` — Direct connection (port 5432) for `prisma migrate deploy`
+- Tables: `User`, `Post`, `Project`, `Lead`
+- SQL file: `supabase/schema.sql` — run once in Supabase SQL Editor
 
-### Models
+### Clients
 
-- `User`, `Post`, `Project`, `Lead`
-- Initial migration: `prisma/migrations/20250617000000_init/`
+| Client | File | Used for |
+|--------|------|----------|
+| Service (server) | `src/lib/supabase/server.ts` | API routes, Server Components, auth |
+| Browser | `src/lib/supabase/client.ts` | Client components (when needed) |
 
-### Configuration
+## Environment variables
 
-- `.env.example` — Supabase connection string templates
-- Removed all Neon references; Supabase is the sole documented provider
+From **Supabase → Project Settings → API**:
 
-## Why
+| Variable | Notes |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key (used on server and client) |
 
-Vercel serverless requires a hosted Postgres. Supabase provides pooling compatible with Prisma and serverless runtimes.
-
-## How
-
-### Supabase dashboard
-
-**Project Settings → Database → Connection string**
-
-| Env var | Supabase mode |
-|---------|---------------|
-| `DATABASE_URL` | **Transaction** pooler, port 6543 — append `&connection_limit=1` |
-| `DIRECT_URL` | **Session** pooler or **Direct**, port 5432 |
-
-### Local setup
+## Setup
 
 ```bash
-cp .env.example .env
-# Fill in Supabase URLs and AUTH_SECRET
-npm run db:setup
+# 1. Run supabase/schema.sql in Supabase SQL Editor
+# 2. Configure .env.local
+cp .env.example .env.local
+# 3. Seed
+npm run db:seed
 ```
-
-### Vercel
-
-Add `DATABASE_URL`, `DIRECT_URL`, and `AUTH_SECRET` in **Settings → Environment Variables** for Production and Preview.

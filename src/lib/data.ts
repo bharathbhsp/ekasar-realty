@@ -1,46 +1,107 @@
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/supabase/server";
+import type { Project, Post, PostWithAuthor } from "@/types/database";
 import type { ProjectStatus } from "@/types";
 
+async function attachAuthors(posts: Post[]): Promise<PostWithAuthor[]> {
+  if (posts.length === 0) return [];
+
+  const supabase = createServiceClient();
+  const authorIds = [...new Set(posts.map((p) => p.authorId))];
+  const { data: authors } = await supabase
+    .from("User")
+    .select("id, name")
+    .in("id", authorIds);
+
+  const nameById = new Map(
+    (authors ?? []).map((a) => [a.id as string, a.name as string])
+  );
+
+  return posts.map((post) => ({
+    ...post,
+    author: nameById.has(post.authorId)
+      ? { name: nameById.get(post.authorId)! }
+      : null,
+  }));
+}
+
 export async function getPublishedPosts(limit?: number) {
-  return prisma.post.findMany({
-    where: { visibility: { in: ["PUBLIC", "MEMBER"] } },
-    include: { author: { select: { name: true } } },
-    orderBy: { publishedAt: "desc" },
-    ...(limit ? { take: limit } : {}),
-  });
+  const supabase = createServiceClient();
+  let query = supabase
+    .from("Post")
+    .select("*")
+    .in("visibility", ["PUBLIC", "MEMBER"])
+    .order("publishedAt", { ascending: false });
+
+  if (limit) query = query.limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return attachAuthors((data ?? []) as Post[]);
 }
 
 export async function getPostBySlug(slug: string) {
-  return prisma.post.findUnique({
-    where: { slug },
-    include: { author: { select: { name: true } } },
-  });
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("Post")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const [withAuthor] = await attachAuthors([data as Post]);
+  return withAuthor;
 }
 
 export async function getProjects(status?: ProjectStatus) {
-  return prisma.project.findMany({
-    where: status ? { status } : undefined,
-    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-  });
+  const supabase = createServiceClient();
+  let query = supabase
+    .from("Project")
+    .select("*")
+    .order("featured", { ascending: false })
+    .order("createdAt", { ascending: false });
+
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Project[];
 }
 
-export async function getFeaturedProjects() {
-  return prisma.project.findMany({
-    where: { featured: true },
-    orderBy: { createdAt: "desc" },
-  });
+export async function getFeaturedProjects(): Promise<Project[]> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("Project")
+    .select("*")
+    .eq("featured", true)
+    .order("createdAt", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Project[];
 }
 
-export async function getProjectBySlug(slug: string) {
-  return prisma.project.findUnique({ where: { slug } });
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("Project")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function getAdminPosts(userId: string, role: string) {
-  return prisma.post.findMany({
-    where: role === "ADMIN" ? undefined : { authorId: userId },
-    include: { author: { select: { name: true } } },
-    orderBy: { updatedAt: "desc" },
-  });
+  const supabase = createServiceClient();
+  let query = supabase.from("Post").select("*").order("updatedAt", { ascending: false });
+
+  if (role !== "ADMIN") query = query.eq("authorId", userId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return attachAuthors((data ?? []) as Post[]);
 }
 
 export function getVisibleBody(
