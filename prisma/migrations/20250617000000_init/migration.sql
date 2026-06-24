@@ -1,7 +1,5 @@
-# Create initial migration locally (requires DATABASE_URL + DIRECT_URL):
-#   npx prisma migrate dev --name init
-#
-# Or apply this migration on deploy via `prisma migrate deploy`
+# Apply on deploy via `prisma migrate deploy` (uses DIRECT_URL)
+# Get connection strings from Supabase → Project Settings → Database
 
 -- CreateTable
 CREATE TABLE "User" (

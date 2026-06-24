@@ -312,7 +312,7 @@ Insufficient role → `/403` page with CTA to sign in or contact admin
 | **State** | TanStack Query (server state) + Zustand (UI state) |
 | **Auth** | NextAuth.js / Clerk / custom JWT + refresh |
 | **API** | REST or tRPC; Node.js / Next.js API routes |
-| **Database** | PostgreSQL (users, posts, leads, projects) |
+| **Database** | Supabase Postgres via Prisma (users, posts, leads, projects) |
 | **CMS** | Custom admin UI (MVP) or headless CMS (Phase 2) |
 | **Media** | Vercel Blob / S3 + CDN |
 | **Email** | Resend / SendGrid (verification, password reset) |
@@ -335,7 +335,7 @@ Insufficient role → `/403` page with CTA to sign in or contact admin
 │                    API Layer (REST / tRPC)                   │
 │   /api/auth/*  /api/posts/*  /api/projects/*  /api/leads/*  │
 ├─────────────────────────────────────────────────────────────┤
-│   PostgreSQL   │   Object Storage   │   Email Service       │
+│   Supabase Postgres │   Object Storage   │   Email Service       │
 └─────────────────────────────────────────────────────────────┘
 ```
 

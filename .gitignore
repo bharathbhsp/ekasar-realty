@@ -22,7 +22,6 @@
 
 # misc
 .DS_Store
-*.pem
 
 # debug
 npm-debug.log*
@@ -30,14 +29,47 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env & secrets (never commit — use .env.example as template)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env*.example
+.envrc
 
-# database
+# pulled from Vercel / hosting providers
+.env.production.local
+.env.development.local
+.env.test.local
+.env.vercel
+
+# keys & certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_rsa.*
+id_dsa
+id_ed25519
+*.secret
+
+# cloud & service credentials
+credentials.json
+**/credentials.json
+service-account*.json
+**/service-account*.json
+.secrets/
+secrets/
+
+# database (local SQLite and journals)
+prisma/*.db
+prisma/*.db-journal
 prisma/dev.db
 prisma/dev.db-journal
+*.sqlite
+*.sqlite3
 
 # vercel
 .vercel
